@@ -5,12 +5,12 @@ from flask import Flask, request, render_template_string
 
 app = Flask(__name__)
 
-# Load the pickle model
+# Load the model relative to the current script directory
 MODEL_PATH = os.path.join(os.path.dirname(__file__), 'linear.pkl')
 with open(MODEL_PATH, 'rb') as f:
     model = pickle.load(f)
 
-# Built-in single-file HTML layout with custom modern styles and shadow effects
+# Built-in modern template with glassmorphism, shadow effects, and a categorical dropdown
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="en">
@@ -20,149 +20,188 @@ HTML_TEMPLATE = """
     <title>House Price Predictor</title>
     <style>
         :root {
-            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
             --card-bg: rgba(255, 255, 255, 0.95);
-            --primary-color: #4f46e5;
-            --primary-hover: #4338ca;
-            --text-main: #1e293b;
+            --text-dark: #0f172a;
             --text-muted: #64748b;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background: var(--bg-gradient);
             min-height: 100vh;
+            margin: 0;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0;
-            padding: 20px;
+            padding: 24px 12px;
+            box-sizing: border-box;
         }
 
-        .container {
+        .card {
             background: var(--card-bg);
-            border-radius: 16px;
-            padding: 35px;
+            border-radius: 20px;
+            padding: 32px;
             width: 100%;
-            max-width: 500px;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 
-                        0 8px 10px -6px rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(10px);
+            max-width: 480px;
+            box-shadow: 
+                0 20px 25px -5px rgba(0, 0, 0, 0.4),
+                0 8px 10px -6px rgba(0, 0, 0, 0.3),
+                0 0 0 1px rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(12px);
         }
 
-        h2 {
-            margin-top: 0;
-            color: var(--text-main);
+        .title {
+            margin: 0 0 8px 0;
             font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text-dark);
             text-align: center;
-            margin-bottom: 24px;
+        }
+
+        .subtitle {
+            margin: 0 0 24px 0;
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .full-width {
+            grid-column: span 2;
         }
 
         .form-group {
-            margin-bottom: 16px;
+            display: flex;
+            flex-direction: column;
         }
 
         label {
-            display: block;
-            margin-bottom: 6px;
-            color: var(--text-muted);
+            font-size: 0.8rem;
             font-weight: 600;
-            font-size: 0.875rem;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
         input, select {
-            width: 100%;
-            padding: 10px 14px;
-            border: 1px solid #cbd5e1;
+            padding: 10px 12px;
+            border: 1px solid #e2e8f0;
             border-radius: 8px;
-            box-sizing: border-box;
             font-size: 0.95rem;
+            color: var(--text-dark);
+            background-color: #f8fafc;
             transition: all 0.2s ease;
-            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.03);
         }
 
         input:focus, select:focus {
             outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+            border-color: var(--primary);
+            background-color: #ffffff;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
         }
 
         button {
-            width: 100%;
-            padding: 12px;
-            background-color: var(--primary-color);
-            color: white;
+            margin-top: 12px;
+            padding: 14px;
             border: none;
-            border-radius: 8px;
+            border-radius: 10px;
+            background: var(--primary);
+            color: white;
             font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
-            margin-top: 10px;
-            transition: background-color 0.2s ease, transform 0.1s ease;
-            box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.4);
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
         }
 
         button:hover {
-            background-color: var(--primary-hover);
+            background: var(--primary-hover);
             transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(99, 102, 241, 0.5);
         }
 
-        .result {
-            margin-top: 24px;
+        button:active {
+            transform: translateY(0);
+        }
+
+        .result-box {
+            margin-top: 20px;
             padding: 16px;
-            background-color: #f0fdf4;
+            border-radius: 10px;
+            background: #f0fdf4;
             border: 1px solid #bbf7d0;
-            border-radius: 8px;
             color: #166534;
             text-align: center;
-            font-size: 1.25rem;
+            font-size: 1.2rem;
             font-weight: 700;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2>House Price Predictor</h2>
-        <form action="/" method="POST">
-            <div class="form-group">
-                <label for="square_footage">Square Footage</label>
-                <input type="number" step="any" id="square_footage" name="Square_Footage" required>
-            </div>
-            <div class="form-group">
-                <label for="num_bedrooms">Num Bedrooms</label>
-                <input type="number" step="any" id="num_bedrooms" name="Num_Bedrooms" required>
-            </div>
-            <div class="form-group">
-                <label for="num_bathrooms">Num Bathrooms</label>
-                <input type="number" step="any" id="num_bathrooms" name="Num_Bathrooms" required>
-            </div>
-            <div class="form-group">
-                <label for="year_built">Year Built</label>
-                <input type="number" step="any" id="year_built" name="Year_Built" required>
-            </div>
-            <div class="form-group">
-                <label for="lot_size">Lot Size</label>
-                <input type="number" step="any" id="lot_size" name="Lot_Size" required>
-            </div>
-            <div class="form-group">
-                <label for="garage_size">Garage Size</label>
-                <input type="number" step="any" id="garage_size" name="Garage_Size" required>
-            </div>
-            <div class="form-group">
-                <label for="neighborhood_quality">Neighborhood Quality</label>
-                <select id="neighborhood_quality" name="Neighborhood_Quality" required>
-                    <option value="" disabled selected>Select Quality</option>
-                    <option value="1">Low</option>
-                    <option value="2">Medium</option>
-                    <option value="3">High</option>
-                </select>
-            </div>
-            <button type="submit">Predict Price</button>
-        </form>
+    <div class="card">
+        <h1 class="title">Property Predictor</h1>
+        <p class="subtitle">Enter specs below to get an instant valuation</p>
         
+        <form action="/" method="POST">
+            <div class="form-grid">
+                <div class="form-group full-width">
+                    <label for="square_footage">Square Footage</label>
+                    <input type="number" step="any" id="square_footage" name="Square_Footage" placeholder="e.g. 2100" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="num_bedrooms">Bedrooms</label>
+                    <input type="number" step="any" id="num_bedrooms" name="Num_Bedrooms" placeholder="3" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="num_bathrooms">Bathrooms</label>
+                    <input type="number" step="any" id="num_bathrooms" name="Num_Bathrooms" placeholder="2" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="year_built">Year Built</label>
+                    <input type="number" step="any" id="year_built" name="Year_Built" placeholder="2015" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="garage_size">Garage (Cars)</label>
+                    <input type="number" step="any" id="garage_size" name="Garage_Size" placeholder="2" required>
+                </div>
+
+                <div class="form-group full-width">
+                    <label for="lot_size">Lot Size (sq ft)</label>
+                    <input type="number" step="any" id="lot_size" name="Lot_Size" placeholder="e.g. 5000" required>
+                </div>
+
+                <div class="form-group full-width">
+                    <label for="neighborhood_quality">Neighborhood Category</label>
+                    <select id="neighborhood_quality" name="Neighborhood_Quality" required>
+                        <option value="" disabled selected>Select Quality</option>
+                        <option value="1">Low</option>
+                        <option value="2">Medium</option>
+                        <option value="3">High</option>
+                        <option value="4">Premium</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="full-width">Calculate Value</button>
+            </div>
+        </form>
+
         {% if prediction_text %}
-        <div class="result">
+        <div class="result-box">
             {{ prediction_text }}
         </div>
         {% endif %}
@@ -175,8 +214,7 @@ HTML_TEMPLATE = """
 def home():
     prediction_text = None
     if request.method == 'POST':
-        # Feature inputs matching your model's exact metadata order:
-        # ['Square_Footage', 'Num_Bedrooms', 'Num_Bathrooms', 'Year_Built', 'Lot_Size', 'Garage_Size', 'Neighborhood_Quality']
+        # Array ordered exactly to match the feature vector expected by linear.pkl
         features = [
             float(request.form['Square_Footage']),
             float(request.form['Num_Bedrooms']),
@@ -187,10 +225,14 @@ def home():
             float(request.form['Neighborhood_Quality'])
         ]
         
+        # Predict price
         prediction = model.predict([features])[0]
-        prediction_text = f"Estimated Price: ${prediction:,.2f}"
+        prediction_text = f"Estimated Value: ${prediction:,.2f}"
 
     return render_template_string(HTML_TEMPLATE, prediction_text=prediction_text)
+
+# Required handler for Vercel WSGI deployment
+app = app.wsgi_app
 
 if __name__ == '__main__':
     app.run(debug=True)
