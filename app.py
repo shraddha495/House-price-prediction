@@ -1,238 +1,167 @@
-import os
-import pickle
 import numpy as np
-from flask import Flask, request, render_template_string
+import pickle
+import streamlit as st
 
-app = Flask(__name__)
+# Page Configuration
+st.set_page_config(
+    page_title="Real Estate Price Predictor", page_icon="🏡", layout="centered"
+)
 
-# Load the model relative to the current script directory
-MODEL_PATH = os.path.join(os.path.dirname(__file__), 'linear.pkl')
-with open(MODEL_PATH, 'rb') as f:
-    model = pickle.load(f)
-
-# Built-in modern template with glassmorphism, shadow effects, and a categorical dropdown
-HTML_TEMPLATE = """
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>House Price Predictor</title>
+# Custom CSS for Natural Homes Background and Beautiful Layout
+st.markdown(
+    """
     <style>
-        :root {
-            --primary: #6366f1;
-            --primary-hover: #4f46e5;
-            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
-            --card-bg: rgba(255, 255, 255, 0.95);
-            --text-dark: #0f172a;
-            --text-muted: #64748b;
-        }
+    /* Background with a beautiful natural neighborhood/homes image and dark overlay */
+    .stApp {
+        background: linear-gradient(rgba(10, 25, 47, 0.65), rgba(10, 25, 47, 0.65)), 
+                    url('https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1920&q=80');
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+        font-family: 'Inter', sans-serif;
+    }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: var(--bg-gradient);
-            min-height: 100vh;
-            margin: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 24px 12px;
-            box-sizing: border-box;
-        }
+    /* Glassmorphism Container for Content */
+    .main-container {
+        background: rgba(255, 255, 255, 0.9);
+        padding: 30px;
+        border-radius: 16px;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        margin-top: 20px;
+        margin-bottom: 20px;
+    }
 
-        .card {
-            background: var(--card-bg);
-            border-radius: 20px;
-            padding: 32px;
-            width: 100%;
-            max-width: 480px;
-            box-shadow: 
-                0 20px 25px -5px rgba(0, 0, 0, 0.4),
-                0 8px 10px -6px rgba(0, 0, 0, 0.3),
-                0 0 0 1px rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(12px);
-        }
+    /* Text colors inside container for clarity */
+    h1, h2, h3, h4, h5, h6, label {
+        color: #0f172a !important;
+    }
 
-        .title {
-            margin: 0 0 8px 0;
-            font-size: 1.75rem;
-            font-weight: 700;
-            color: var(--text-dark);
-            text-align: center;
-        }
+    /* Modern Button Style */
+    .stButton>button {
+        width: 100%;
+        background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        color: white;
+        font-size: 18px;
+        font-weight: 600;
+        padding: 12px 24px;
+        border-radius: 8px;
+        border: none;
+        box-shadow: 0 4px 14px rgba(5, 150, 105, 0.4);
+        transition: all 0.3s ease;
+    }
+    
+    .stButton>button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(5, 150, 105, 0.6);
+    }
 
-        .subtitle {
-            margin: 0 0 24px 0;
-            font-size: 0.875rem;
-            color: var(--text-muted);
-            text-align: center;
-        }
-
-        .form-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
-
-        .full-width {
-            grid-column: span 2;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-        }
-
-        label {
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            margin-bottom: 6px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        input, select {
-            padding: 10px 12px;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            font-size: 0.95rem;
-            color: var(--text-dark);
-            background-color: #f8fafc;
-            transition: all 0.2s ease;
-            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.03);
-        }
-
-        input:focus, select:focus {
-            outline: none;
-            border-color: var(--primary);
-            background-color: #ffffff;
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
-        }
-
-        button {
-            margin-top: 12px;
-            padding: 14px;
-            border: none;
-            border-radius: 10px;
-            background: var(--primary);
-            color: white;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
-        }
-
-        button:hover {
-            background: var(--primary-hover);
-            transform: translateY(-1px);
-            box-shadow: 0 6px 16px rgba(99, 102, 241, 0.5);
-        }
-
-        button:active {
-            transform: translateY(0);
-        }
-
-        .result-box {
-            margin-top: 20px;
-            padding: 16px;
-            border-radius: 10px;
-            background: #f0fdf4;
-            border: 1px solid #bbf7d0;
-            color: #166534;
-            text-align: center;
-            font-size: 1.2rem;
-            font-weight: 700;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-        }
+    /* Result Box Styling */
+    .result-box {
+        background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+        border: 1px solid #10b981;
+        border-radius: 10px;
+        padding: 20px;
+        text-align: center;
+        margin-top: 20px;
+        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2);
+    }
+    .result-text {
+        color: #065f46;
+        font-size: 28px;
+        font-weight: bold;
+    }
     </style>
-</head>
-<body>
-    <div class="card">
-        <h1 class="title">Property Predictor</h1>
-        <p class="subtitle">Enter specs below to get an instant valuation</p>
-        
-        <form action="/" method="POST">
-            <div class="form-grid">
-                <div class="form-group full-width">
-                    <label for="square_footage">Square Footage</label>
-                    <input type="number" step="any" id="square_footage" name="Square_Footage" placeholder="e.g. 2100" required>
-                </div>
+""",
+    unsafe_allow_html=True,
+)
 
-                <div class="form-group">
-                    <label for="num_bedrooms">Bedrooms</label>
-                    <input type="number" step="any" id="num_bedrooms" name="Num_Bedrooms" placeholder="3" required>
-                </div>
 
-                <div class="form-group">
-                    <label for="num_bathrooms">Bathrooms</label>
-                    <input type="number" step="any" id="num_bathrooms" name="Num_Bathrooms" placeholder="2" required>
-                </div>
+# Load the Pickled Linear Regression Model
+@st.cache_resource
+def load_model():
+  with open("linear.pkl", "rb") as file:
+    model = pickle.load(file)
+  return model
 
-                <div class="form-group">
-                    <label for="year_built">Year Built</label>
-                    <input type="number" step="any" id="year_built" name="Year_Built" placeholder="2015" required>
-                </div>
 
-                <div class="form-group">
-                    <label for="garage_size">Garage (Cars)</label>
-                    <input type="number" step="any" id="garage_size" name="Garage_Size" placeholder="2" required>
-                </div>
+model = load_model()
 
-                <div class="form-group full-width">
-                    <label for="lot_size">Lot Size (sq ft)</label>
-                    <input type="number" step="any" id="lot_size" name="Lot_Size" placeholder="e.g. 5000" required>
-                </div>
+# Wrap app content in a styled glassmorphic container card
+st.markdown('<div class="main-container">', unsafe_allow_html=True)
 
-                <div class="form-group full-width">
-                    <label for="neighborhood_quality">Neighborhood Category</label>
-                    <select id="neighborhood_quality" name="Neighborhood_Quality" required>
-                        <option value="" disabled selected>Select Quality</option>
-                        <option value="1">Low</option>
-                        <option value="2">Medium</option>
-                        <option value="3">High</option>
-                        <option value="4">Premium</option>
-                    </select>
-                </div>
+# Application Title & Subtitle
+st.title("🏡 Real Estate Price Predictor")
+st.caption(
+    "Enter the property details below to estimate the housing price using your"
+    " Linear Regression model."
+)
 
-                <button type="submit" class="full-width">Calculate Value</button>
-            </div>
-        </form>
+st.markdown("---")
 
-        {% if prediction_text %}
+# Input Form Fields matching model schema features
+st.write("### 📝 Property Details")
+
+col1, col2 = st.columns(2)
+
+with col1:
+  square_footage = st.number_input(
+      "Square Footage (sq ft)",
+      min_value=300,
+      max_value=15000,
+      value=2000,
+      step=50,
+  )
+  num_bedrooms = st.number_input(
+      "Number of Bedrooms", min_value=1, max_value=10, value=3, step=1
+  )
+  num_bathrooms = st.number_input(
+      "Number of Bathrooms", min_value=1.0, max_value=10.0, value=2.0, step=0.5
+  )
+  year_built = st.number_input(
+      "Year Built", min_value=1800, max_value=2026, value=2010, step=1
+  )
+
+with col2:
+  lot_size = st.number_input(
+      "Lot Size (sq ft)", min_value=200, max_value=100000, value=5000, step=100
+  )
+  garage_size = st.number_input(
+      "Garage Size (Cars)", min_value=0, max_value=6, value=2, step=1
+  )
+  neighborhood_quality = st.slider(
+      "Neighborhood Quality (1-10)", min_value=1, max_value=10, value=7, step=1
+  )
+
+# Prediction Action
+if st.button("🔮 Predict House Price"):
+  # Format features matching model schema order:
+  # ['Square_Footage', 'Num_Bedrooms', 'Num_Bathrooms', 'Year_Built', 'Lot_Size', 'Garage_Size', 'Neighborhood_Quality']
+  features = np.array([[
+      square_footage,
+      num_bedrooms,
+      num_bathrooms,
+      year_built,
+      lot_size,
+      garage_size,
+      neighborhood_quality,
+  ]])
+
+  # Perform Prediction
+  prediction = model.predict(features)[0]
+
+  # Display Pretty Result Output formatted as currency
+  st.markdown(
+      f"""
         <div class="result-box">
-            {{ prediction_text }}
+            <span style="color: #047857; font-weight: 600; font-size: 16px;">Estimated Property Price:</span>
+            <div class="result-text">${prediction:,.2f}</div>
         </div>
-        {% endif %}
-    </div>
-</body>
-</html>
-"""
+        """,
+      unsafe_allow_html=True,
+  )
 
-@app.route('/', methods=['GET', 'POST'])
-def home():
-    prediction_text = None
-    if request.method == 'POST':
-        # Array ordered exactly to match the feature vector expected by linear.pkl
-        features = [
-            float(request.form['Square_Footage']),
-            float(request.form['Num_Bedrooms']),
-            float(request.form['Num_Bathrooms']),
-            float(request.form['Year_Built']),
-            float(request.form['Lot_Size']),
-            float(request.form['Garage_Size']),
-            float(request.form['Neighborhood_Quality'])
-        ]
-        
-        # Predict price
-        prediction = model.predict([features])[0]
-        prediction_text = f"Estimated Value: ${prediction:,.2f}"
+  st.balloons()
 
-    return render_template_string(HTML_TEMPLATE, prediction_text=prediction_text)
-
-# Required handler for Vercel WSGI deployment
-app = app.wsgi_app
-
-if __name__ == '__main__':
-    app.run(debug=True)
+st.markdown("</div>", unsafe_allow_html=True)
