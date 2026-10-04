@@ -7,7 +7,7 @@ st.set_page_config(
     page_title="Real Estate Price Predictor", page_icon="🏡", layout="centered"
 )
 
-# Custom CSS for Natural Homes Background and Beautiful Layout
+# Custom CSS for Natural Homes Background and Clear Dark Text
 st.markdown(
     """
     <style>
@@ -23,7 +23,7 @@ st.markdown(
 
     /* Glassmorphism Container for Content */
     .main-container {
-        background: rgba(255, 255, 255, 0.9);
+        background: rgba(255, 255, 255, 0.92);
         padding: 30px;
         border-radius: 16px;
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
@@ -33,16 +33,22 @@ st.markdown(
         margin-bottom: 20px;
     }
 
-    /* Text colors inside container for clarity */
-    h1, h2, h3, h4, h5, h6, label {
+    /* Explicitly forcing all headings, text, and labels inside the app to be dark and clearly visible */
+    h1, h2, h3, h4, h5, h6, .stMarkdown p, span, div {
+        color: #1e293b !important;
+    }
+    
+    /* Input Field Labels specific styling */
+    .stNumberInput label, .stSlider label {
         color: #0f172a !important;
+        font-weight: 600 !important;
     }
 
     /* Modern Button Style */
     .stButton>button {
         width: 100%;
         background: linear-gradient(135deg, #059669 0%, #047857 100%);
-        color: white;
+        color: white !important;
         font-size: 18px;
         font-weight: 600;
         padding: 12px 24px;
@@ -68,7 +74,7 @@ st.markdown(
         box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2);
     }
     .result-text {
-        color: #065f46;
+        color: #065f46 !important;
         font-size: 28px;
         font-weight: bold;
     }
@@ -88,7 +94,7 @@ def load_model():
 
 model = load_model()
 
-# Wrap app content in a styled glassmorphic container card
+# Wrap app content in a styled container card
 st.markdown('<div class="main-container">', unsafe_allow_html=True)
 
 # Application Title & Subtitle
@@ -155,7 +161,7 @@ if st.button("🔮 Predict House Price"):
   st.markdown(
       f"""
         <div class="result-box">
-            <span style="color: #047857; font-weight: 600; font-size: 16px;">Estimated Property Price:</span>
+            <span style="color: #047857 !important; font-weight: 600; font-size: 16px;">Estimated Property Price:</span>
             <div class="result-text">${prediction:,.2f}</div>
         </div>
         """,
