@@ -7,13 +7,13 @@ st.set_page_config(
     page_title="Real Estate Price Predictor", page_icon="🏡", layout="centered"
 )
 
-# Custom CSS for Natural Homes Background and Clear Dark Text
+# Custom CSS for Natural Homes Background and Clean Black Text
 st.markdown(
     """
     <style>
-    /* Background with a beautiful natural neighborhood/homes image and dark overlay */
+    /* Natural Neighborhood Homes Background with a light overlay for readability */
     .stApp {
-        background: linear-gradient(rgba(10, 25, 47, 0.65), rgba(10, 25, 47, 0.65)), 
+        background: linear-gradient(rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.4)), 
                     url('https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1920&q=80');
         background-size: cover;
         background-position: center;
@@ -23,25 +23,26 @@ st.markdown(
 
     /* Glassmorphism Container for Content */
     .main-container {
-        background: rgba(255, 255, 255, 0.92);
+        background: rgba(255, 255, 255, 0.95);
         padding: 30px;
         border-radius: 16px;
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
         backdrop-filter: blur(8px);
         -webkit-backdrop-filter: blur(8px);
         margin-top: 20px;
         margin-bottom: 20px;
     }
 
-    /* Explicitly forcing all headings, text, and labels inside the app to be dark and clearly visible */
-    h1, h2, h3, h4, h5, h6, .stMarkdown p, span, div {
-        color: #1e293b !important;
+    /* Force all text, headers, and descriptions inside the app to be solid dark/black */
+    h1, h2, h3, h4, h5, h6, .stMarkdown p, span {
+        color: #0f172a !important;
     }
     
-    /* Input Field Labels specific styling */
-    .stNumberInput label, .stSlider label {
-        color: #0f172a !important;
+    /* Input Field Labels and Text */
+    label, .stNumberInput label, .stSlider label {
+        color: #1e293b !important;
         font-weight: 600 !important;
+        font-size: 15px !important;
     }
 
     /* Modern Button Style */
